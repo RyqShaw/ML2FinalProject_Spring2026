@@ -1,0 +1,59 @@
+# API Keys
+.env
+.env.*
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.virtualenv/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+.pyright/
+
+# History and session data
+.Rhistory
+.RData
+.Rapp.history
+.Rproj.user/
+
+# R environment
+.Renviron
+
+# Package build artifacts
+*.Rcheck/
+*.tar.gz
+
+# knitr / rmarkdown output
+*_cache/
+/cache/
+*.knit.md
+*.utf8.md
+
+# Packrat / renv (dependency managers)
+packrat/lib*/
+packrat/src/
+renv/library/
+renv/local/
+renv/staging/
+
+!packrat/packrat.lock
+!renv.lock
+
+# VSCode
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json 
