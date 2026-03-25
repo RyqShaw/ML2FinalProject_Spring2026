@@ -21,7 +21,7 @@ library(plotly)
 ## Loading data
 
 ```{r reading_data}
-riot <- read.csv("online_gaming_behavior_dataset.csv")
+riot <- read.csv("match_data.csv")
 head(riot, 5)
 ```
 
