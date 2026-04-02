@@ -1,18 +1,10 @@
-library(MASS)
-library(mvnfast)
-library(ggplot2)
-library(plotly)
-
-player_info <- read.csv("online_gaming_behavior_dataset.csv")
+# RIOT DATA SECTION
+# Synthetic Data presumably sampled from a Gaussian Curve given how evenly distributed between low and high it is
+player_info <- read.csv("player_engagement_summary.csv")
 head(player_info, 5)
 
 # Establish Categorical distribution
-player_info <- player_info %>%
-  mutate(EngagementLevel = factor(EngagementLevel, 
-                             levels = c("Low", "Medium", "High"), 
-                             ordered = TRUE))
-head(player_info, 5)
-engagement <- as.integer(player_info$EngagementLevel)
+engagement <- as.integer(player_info$mean_time_played)
 head(engagement)
 
 # Beta(math done in log space)
@@ -32,9 +24,8 @@ posterior <- function(theta, alpha, categories) {
   prior(theta, alpha + as.numeric(counts))
 }
 
-alpha <- c(15, 30, 20)
-
 # Theta init based on provieded alphas
+alpha <- c(1,2,1)
 theta_prior <- alpha / sum(alpha)
 theta_posterior <- (alpha + as.numeric(table(factor(engagement, levels = 1:3)))) /
   sum(alpha + as.numeric(table(factor(engagement, levels = 1:3))))
@@ -56,7 +47,7 @@ plot_df <- data.frame(
   Distribution = rep(c("Prior", "Posterior"), each = 3)
 )
 
-# display as low, medium,
+# display as low, medium, high
 plot_df$Category <- factor(plot_df$Category, levels = c("Low", "Medium", "High"))
 plot_df$Distribution <- factor(plot_df$Distribution, levels = c("Prior", "Posterior"))
 
@@ -70,5 +61,3 @@ ggplot(plot_df, aes(x = Category, y = Probability, fill = Distribution)) +
   labs(x = expression(theta), y = expression(p(theta))) +
   ggtitle("Prior and Posterior Distributions (Dirichlet-Categorical)") +
   theme_minimal()
-
-# Synthetic Data presumably sampled from a Gaussian Curve given how evenly distributed between low and high it is
