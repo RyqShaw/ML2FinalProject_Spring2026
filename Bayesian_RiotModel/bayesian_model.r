@@ -3,7 +3,7 @@ library(mvnfast)
 library(ggplot2)
 library(plotly)
 # SYNTHETIC DATA SECTION
-player_info <- read.csv("online_gaming_behavior_dataset.csv")
+player_info <- read.csv("player_engagement_summary.csv")
 head(player_info, 5)
 
 # Establish Categorical distribution

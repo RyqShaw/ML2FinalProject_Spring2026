@@ -1,6 +1,7 @@
 # RIOT DATA SECTION
 # Synthetic Data presumably sampled from a Gaussian Curve given how evenly distributed between low and high it is
 player_info <- read.csv("player_engagement_summary.csv")
+riot_info <- read.csv("")
 head(player_info, 5)
 
 # Establish Categorical distribution
