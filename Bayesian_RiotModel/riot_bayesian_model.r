@@ -1,74 +1,90 @@
-library(MASS)
-library(mvnfast)
+library(brms)
+library(tidyverse)
 library(ggplot2)
-library(plotly)
 
-player_info <- read.csv("online_gaming_behavior_dataset.csv")
+set.seed(42)
+player_info <- read.csv("processed_players.csv")
 head(player_info, 5)
 
-# Establish Categorical distribution
-player_info <- player_info %>%
-  mutate(EngagementLevel = factor(EngagementLevel, 
-                             levels = c("Low", "Medium", "High"), 
-                             ordered = TRUE))
-head(player_info, 5)
-engagement <- as.integer(player_info$EngagementLevel)
-head(engagement)
+# Scale Data
+player_info_scaled <- player_info %>%
+  mutate(across(c(kills, deaths, assists, goldSpent, totalMinionsKilled,
+                  visionScore, dragonKills, baronKills, turretKills,
+                  totalHeal, totalHealsOnTeammates, win_ratio, 
+                  early_surrender_ratio), scale))
 
-# Beta(math done in log space)
-dirichlet_beta <- function(alpha) {
-  exp(sum(lgamma(alpha)) - lgamma(sum(alpha)))
-}
+# train and test split for cross validation
+index <- sample(nrow(player_info_scaled), size = 0.8 * nrow(player_info_scaled))
+train <- player_info_scaled[index, ]
+test  <- player_info_scaled[-index, ]
 
-# Dirichlet Prior(math done in log space to not encounter overflow)
-prior <- function(theta, alpha) {
-  exp(-log(dirichlet_beta(alpha)) + sum((alpha - 1) * log(theta)))
-}
+# Getting Default Prior to build an actual Prior
+prior <- default_prior(timePlayed ~ kills + deaths + assists + visionScore
+                       + totalHeal + totalHealsOnTeammates
+                       + win_ratio + early_surrender_ratio + (kills * deaths),
+                       data = train,
+                       family = lognormal())
 
-# Conjugate -> just add counts to alpha
-posterior <- function(theta, alpha, categories) {
-  # enforce 3 categories
-  counts <- table(factor(categories, levels = 1:3))
-  prior(theta, alpha + as.numeric(counts))
-}
+prior
 
-alpha <- c(15, 30, 20)
+# Log Normal Model
+manual_prior <- c(prior(student_t(3, 0, 2.5), class = "sigma"),
+                  prior(student_t(3, 7.4, 2.5), class = "Intercept"),
+                  prior(normal(0, 0.5), class = 'b', coef = 'kills'),
+                  prior(normal(0, 0.5), class = 'b', coef = 'deaths'),
+                  prior(normal(0, 0.5), class = 'b', coef = 'assists'),
+                  prior(normal(0, 0.5), class = 'b', coef = 'visionScore'),
+                  prior(normal(0, 0.5), class = 'b', coef = 'totalHeal'),
+                  prior(normal(0, 0.5), class = 'b', coef = 'totalHealsOnTeammates'),
+                  prior(normal(0, 0.5), class = 'b', coef = 'win_ratio'),
+                  prior(normal(0, 0.5), class = 'b', coef = 'early_surrender_ratio'))
 
-# Theta init based on provieded alphas
-theta_prior <- alpha / sum(alpha)
-theta_posterior <- (alpha + as.numeric(table(factor(engagement, levels = 1:3)))) /
-  sum(alpha + as.numeric(table(factor(engagement, levels = 1:3))))
+manual_prior
 
-# apply methods for all 3 theta values
-prior_vals <- sapply(1:3, function(k) prior(theta_prior, alpha))
-posterior_vals <- sapply(1:3, function(k) posterior(theta_prior, alpha, engagement))
+posterior <- brm(timePlayed ~ kills + deaths + assists + visionScore
+                 + totalHeal + totalHealsOnTeammates
+                 + win_ratio + early_surrender_ratio + (kills * deaths),
+                     family = lognormal(),
+                     data = train,
+                     chains = 4,
+                     iter = 2000,
+                     warmup = 320,
+                     thin = 2,
+                     prior = manual_prior)
 
-#means and MLE found on wikipedia
-counts <- table(factor(engagement, levels = 1:3))
-mle <- as.numeric(counts) / sum(counts)
-prior_mean <- alpha / sum(alpha)
-posterior_mean <- (alpha + as.numeric(counts)) / sum(alpha + as.numeric(counts))
+summary(posterior)
+plot(posterior)
+bayes_R2(posterior)
 
-# bar chart for each of the categories
-plot_df <- data.frame(
-  Category = rep(c("Low", "Medium", "High"), 2),
-  Probability = c(theta_prior, theta_posterior),
-  Distribution = rep(c("Prior", "Posterior"), each = 3)
-)
+post_preds <- posterior_predict(posterior)
 
-# display as low, medium,
-plot_df$Category <- factor(plot_df$Category, levels = c("Low", "Medium", "High"))
-plot_df$Distribution <- factor(plot_df$Distribution, levels = c("Prior", "Posterior"))
+#Make into vector for nicer plot
+post_preds_vec <- as.vector(post_preds)
 
-ggplot(plot_df, aes(x = Category, y = Probability, fill = Distribution)) +
-  geom_bar(stat = "identity", position = position_dodge(width = 0.6), width = 0.5) +
-  geom_text(aes(label = round(Probability, 4)),
-            position = position_dodge(width = 0.6),
-            vjust = -0.5, size = 3.5) +
-  scale_fill_manual(values = c("Prior" = "red", "Posterior" = "purple")) +
-  scale_y_continuous(limits = c(0, 1), expand = expansion(mult = c(0, 0.1))) +
-  labs(x = expression(theta), y = expression(p(theta))) +
-  ggtitle("Prior and Posterior Distributions (Dirichlet-Categorical)") +
+ggplot(data.frame(x = post_preds_vec), aes(x = x)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  labs(
+    title = "Posterior Predictive Distribution(Log Normal) for Average Time Played",
+    x = "Predicted Value",
+    y = "Frequency"
+  ) +
   theme_minimal()
 
-# Synthetic Data presumably sampled from a Gaussian Curve given how evenly distributed between low and high it is
+# Error/Accuracy Quantification
+pred <- posterior_epred(posterior, newdata = test)
+post_means <- colMeans(pred)
+
+rmse <- sqrt(mean((post_means - test$timePlayed)^2))
+
+cat("RMSE:", rmse, "\n")
+
+bayes_R2(posterior, newdata = test)
+
+#Example Pred
+new_obs <- test[3, ]
+
+# Get posterior predictive draws
+example_pred <- posterior_predict(posterior, newdata = new_obs)
+cat("Mean prediction:", mean(pred), "\n")
+cat("95% CI: [", quantile(pred, 0.025), ",", quantile(pred, 0.975), "]\n")
+cat("Actual value:  ", new_obs$timePlayed, "\n")
