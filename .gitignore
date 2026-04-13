@@ -24,6 +24,10 @@ ENV/
 .dmypy.json
 .pyright/
 
+# OS
+.DS_Store
+Thumbs.db
+
 # History and session data
 .Rhistory
 .RData
@@ -32,6 +36,11 @@ ENV/
 
 # R environment
 .Renviron
+
+# renv
+renv/library/
+renv/python/
+renv/staging/
 
 # Package build artifacts
 *.Rcheck/
