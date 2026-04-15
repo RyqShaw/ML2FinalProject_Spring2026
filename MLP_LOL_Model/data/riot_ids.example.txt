@@ -1,0 +1,6 @@
+# One Riot ID per line (official format: gameName#tagLine).
+# Copy to riot_ids.txt and fill in. Do not commit riot_ids.txt if you add real names.
+#
+# Example:
+# YourFriend#NA1
+# TeammateName#NA1

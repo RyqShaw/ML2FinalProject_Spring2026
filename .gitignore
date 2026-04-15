@@ -2,6 +2,10 @@
 .env
 .env.*
 
+# Cached LoL match bundles (large; regenerate locally)
+data/matches_bundle.json
+data/riot_ids.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
