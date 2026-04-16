@@ -61,6 +61,7 @@ post_preds <- posterior_predict(posterior)
 
 #Make into vector for nicer plot
 post_preds_vec <- as.vector(post_preds)
+cat("95% CI: [", quantile(post_preds_vec, 0.025), ",", quantile(post_preds_vec, 0.975), "]\n")
 
 ggplot(data.frame(x = post_preds_vec), aes(x = x)) +
   geom_histogram(bins = 30, fill = "steelblue", color = "white") +
