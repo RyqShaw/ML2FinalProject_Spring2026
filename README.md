@@ -10,10 +10,12 @@ Dependencies:
 - Python 3 & Jupytr Notebook
 
 ## Files of Note
+- Data Used in Models: Riot/match_data.csv
 - CF Model: Riot/cf.ipynb
 - MLP Model: MLP_LOL_Model/player_retention_analysis.ipynb
 - Bayesian Model: Bayesian_RiotModel/riot_bayesian_model.r
 - Data Collection: Riot/get_data.ipynb
+- Data Processing for Bayesian Model: Bayesian_RiotModel/preprocessing_data.ipynb
 
 ## Extra Notes
 - Steam Section was not used; Could not get data we wanted out of it
